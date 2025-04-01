@@ -1,5 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_bcrypt import Bcrypt
+bcrypt = Bcrypt()
 
 db = SQLAlchemy()
 
@@ -10,6 +12,7 @@ class User(db.Model):
     password = db.Column(db.String(80), nullable=False)  # Plain text password (intentionally insecure)
     is_admin = db.Column(db.Boolean, default=False)
     tasks = db.relationship('Task', backref='assigned_user', lazy=True)
+    password_hash = db.Column(db.String(128), nullable= False)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -22,6 +25,15 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
 
     def __repr__(self):
         return f'<Task {self.title}>'
+    
+    def set_password(self, password):
+        self.passowrd_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    def verify_password(self, password):
+        if self.passowrd_hash:
+            return bcrypt.check_password_hash(self.passowrd_hash, password)
+        return False
